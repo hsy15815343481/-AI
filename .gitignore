@@ -1,0 +1,18 @@
+# 依赖与构建产物
+node_modules
+dist
+
+# 本地密钥（不进仓库，新机器照 .env.example 重填）
+.env
+.env.local
+
+# 本地演示数据（首次启动后端会自动重建空库）
+server/data/db.json
+
+# 日志与系统文件
+*.log
+.DS_Store
+
+# 编辑器/本地缓存
+.idea/
+.vscode/
