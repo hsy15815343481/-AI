@@ -21,6 +21,18 @@ export const TOOL_DEFS = [
       { key: 'topic', label: '主题', type: 'input', placeholder: '例如：秋季新款卫衣卖点', required: true },
       { key: 'tone', label: '语气', type: 'select', options: ['活泼', '正式', '种草', '简洁'], required: false }
     ]
+  },
+  {
+    slug: 'text-to-video',
+    name: 'AI 视频',
+    category: '多媒体',
+    costCredits: 5,
+    description: '根据提示词与参考图生成短视频。',
+    fields: [
+      { key: 'prompt', label: '提示词', type: 'textarea', placeholder: '描述镜头、主体与场景，例如：卫衣模特自然走动转身，街拍背景，竖屏', required: true },
+      { key: 'ratio', label: '画幅', type: 'select', options: ['16:9', '9:16', '1:1'], required: false },
+      { key: 'duration', label: '时长(秒)', type: 'input', placeholder: '2-30 秒，默认 5', required: false }
+    ]
   }
 ]
 

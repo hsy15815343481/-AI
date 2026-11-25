@@ -1,8 +1,9 @@
 <script setup>
-import { reactive, ref, computed } from 'vue'
+import { reactive, ref, computed, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import { getToolDef } from '../lib/constants'
+import { getPreset } from '../lib/presets'
 import { createGeneration, fetchGeneration } from '../api/generations'
 import { useAuthStore } from '../stores/auth'
 import { useWalletStore } from '../stores/wallet'
@@ -14,6 +15,7 @@ const auth = useAuthStore()
 const wallet = useWalletStore()
 
 const tool = computed(() => getToolDef(route.params.slug))
+const preset = computed(() => getPreset(route.query.preset))
 const form = reactive({})
 const submitting = ref(false)
 const polling = ref(false)
@@ -24,8 +26,22 @@ const initForm = () => {
   for (const field of tool.value.fields) {
     form[field.key] = field.type === 'select' ? field.options[0] : ''
   }
+  // 模板预置参数与提示词
+  if (preset.value) {
+    if (preset.value.params) Object.assign(form, preset.value.params)
+    if (preset.value.prompt) form.prompt = preset.value.prompt
+    if (preset.value.topic) form.topic = preset.value.topic
+  }
+  // 作品复用 / 外部跳转带回的字段参数（覆盖模板默认值）
+  for (const field of tool.value.fields) {
+    const q = route.query[field.key]
+    if (q !== undefined && q !== '') form[field.key] = String(q)
+  }
 }
 initForm()
+
+// 同详情页内切换模板或复用作品时，重新回填
+watch(() => route.query, initForm)
 
 const validate = () => {
   for (const field of tool.value.fields) {
@@ -88,6 +104,16 @@ const onSubmit = async () => {
     <h1 class="page-title">{{ tool.name }}</h1>
     <p class="muted">{{ tool.description }} · 单次消耗 {{ tool.costCredits }} 积分</p>
 
+    <el-alert
+      v-if="preset"
+      :type="preset.badge ? 'warning' : 'info'"
+      :closable="false"
+      class="preset-tip"
+    >
+      <template #title>已套用模板「{{ preset.title }}」：{{ preset.description }}</template>
+      <div v-if="preset.badge" class="muted">该编辑能力待接入对应模型渠道，当前可先编辑、保存提示词。</div>
+    </el-alert>
+
     <el-row :gutter="16">
       <el-col :xs="24" :md="10">
         <el-card>
@@ -113,3 +139,9 @@ const onSubmit = async () => {
 
   <el-empty v-else description="工具不存在或已下架" />
 </template>
+
+<style scoped>
+.preset-tip {
+  margin: 12px 0 16px;
+}
+</style>
