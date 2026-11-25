@@ -4,6 +4,7 @@ import { useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import { Plus, Search } from '@element-plus/icons-vue'
 import { PRESET_GROUPS, PRESETS } from '../lib/presets'
+import { TOOL_LABELS } from '../lib/constants'
 import { useWorksStore } from '../stores/works'
 import { useAuthStore } from '../stores/auth'
 import { createGeneration } from '../api/generations'
@@ -22,12 +23,6 @@ const GROUP_COVER = {
   copy: 'linear-gradient(135deg,#3b2f5f,#6d28d9)',
   video: 'linear-gradient(135deg,#5f3a1e,#ea580c)',
   edit: 'linear-gradient(135deg,#2b313d,#4b5563)'
-}
-
-const TOOL_LABELS = {
-  'text-to-image': 'AI 绘画',
-  copywriting: '文案生成',
-  'text-to-video': 'AI 视频'
 }
 
 onMounted(async () => {
@@ -132,13 +127,16 @@ async function onGenerate() {
     </div>
   </section>
 
-  <!-- 最近项目 -->
+  <!-- 最近项目（次要区块） -->
   <section class="section">
     <div class="section-head">
       <h2>最近项目</h2>
       <router-link v-if="auth.isLoggedIn" to="/works" class="more">查看全部 ›</router-link>
     </div>
-    <el-empty v-if="!auth.isLoggedIn" description="登录后查看最近创作项目" />
+    <el-empty
+      v-if="!auth.isLoggedIn"
+      description="登录后即可查看并继续你的最近创作项目"
+    />
     <div v-else class="recent-grid">
       <button class="recent-add" @click="router.push('/tools')">
         <el-icon><Plus /></el-icon>
@@ -207,6 +205,7 @@ async function onGenerate() {
   border: 1px solid var(--border);
   border-radius: 16px;
   padding: 18px;
+  box-shadow: 0 1px 3px rgba(16, 24, 40, 0.06);
 }
 
 .upload-box {
@@ -367,7 +366,7 @@ async function onGenerate() {
 .cap {
   font-size: 13px;
   color: var(--muted);
-  background: var(--surface-2);
+  background: var(--surface);
   border: 1px solid var(--border);
   border-radius: 999px;
   padding: 7px 14px;

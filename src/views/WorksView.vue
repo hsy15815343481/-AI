@@ -3,16 +3,11 @@ import { onMounted, ref, computed } from 'vue'
 import { ElMessage } from 'element-plus'
 import { useWorksStore } from '../stores/works'
 import { downloadText, downloadDataUrl } from '../lib/workflow'
+import { TOOL_LABELS } from '../lib/constants'
 
 const works = useWorksStore()
 const loading = ref(false)
 const previewItem = ref(null)
-
-const TOOL_LABELS = {
-  'text-to-image': 'AI 绘画',
-  copywriting: '文案生成',
-  'text-to-video': 'AI 视频'
-}
 
 onMounted(async () => {
   loading.value = true

@@ -40,6 +40,11 @@ export async function request(path, options = {}) {
     }
   }
 
+  if (resp.status === 401) {
+    // 会话过期或未登录：清除本地令牌，避免后续请求持续带失效凭证
+    setToken('')
+  }
+
   if (!resp.ok) {
     const message = data?.message || `请求失败（${resp.status}）`
     const error = new Error(message)

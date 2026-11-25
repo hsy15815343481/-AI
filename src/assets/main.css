@@ -1,36 +1,40 @@
 :root {
-  /* 业务配色（创米深色风格） */
-  --bg: #0e1014;
-  --bg-2: #12151b;
-  --surface: #1a1e26;
-  --surface-2: #232833;
-  --surface-3: #2b313d;
-  --text: #eceef1;
-  --muted: #98a0ad;
-  --border: #2a2f3a;
+  /* 主区浅色主题 */
+  --bg: #f4f5f7;
+  --bg-2: #ffffff;
+  --surface: #ffffff;
+  --surface-2: #f1f3f6;
+  --surface-3: #e6e9ee;
+  --text: #1a1e26;
+  --muted: #6b7280;
+  --border: #e6e9ee;
   --brand: #3b82f6;
   --brand-2: #22d3ee;
   --brand-gradient: linear-gradient(135deg, #3b82f6 0%, #22d3ee 100%);
   --danger: #f87171;
 
-  /* Element Plus 暗色变量覆盖 */
-  --el-bg-color: #1a1e26;
-  --el-bg-color-page: #0e1014;
-  --el-bg-color-overlay: #222732;
-  --el-text-color-primary: #eceef1;
-  --el-text-color-regular: #d6dae0;
-  --el-text-color-secondary: #98a0ad;
-  --el-text-color-placeholder: #6b7280;
-  --el-border-color: #2a2f3a;
-  --el-border-color-light: #2a2f3a;
-  --el-border-color-lighter: #2a2f3a;
-  --el-border-color-extra-light: #2a2f3a;
-  --el-fill-color: #232833;
-  --el-fill-color-light: #1c1f26;
-  --el-fill-color-lighter: #1c1f26;
-  --el-fill-color-blank: #1a1e26;
-  --el-card-bg-color: #1a1e26;
-  --el-mask-color: rgba(0, 0, 0, 0.6);
+  /* 顶部品牌横幅 */
+  --banner-bg: #f5ee5a;
+  --banner-text: #2b2f1a;
+
+  /* Element Plus 浅色变量对齐 */
+  --el-bg-color: #ffffff;
+  --el-bg-color-page: #f4f5f7;
+  --el-bg-color-overlay: #ffffff;
+  --el-text-color-primary: #1a1e26;
+  --el-text-color-regular: #374151;
+  --el-text-color-secondary: #6b7280;
+  --el-text-color-placeholder: #9ca3af;
+  --el-border-color: #e6e9ee;
+  --el-border-color-light: #e6e9ee;
+  --el-border-color-lighter: #e6e9ee;
+  --el-border-color-extra-light: #e6e9ee;
+  --el-fill-color: #f1f3f6;
+  --el-fill-color-light: #f4f5f7;
+  --el-fill-color-lighter: #f4f5f7;
+  --el-fill-color-blank: #ffffff;
+  --el-card-bg-color: #ffffff;
+  --el-mask-color: rgba(0, 0, 0, 0.45);
   --el-color-primary: #3b82f6;
 }
 
@@ -71,7 +75,7 @@ body {
   font-size: 13px;
 }
 
-/* ---------- Element Plus 暗色适配 ---------- */
+/* ---------- Element Plus 浅色适配 ---------- */
 
 .el-card {
   background: var(--surface);
@@ -86,19 +90,22 @@ body {
 }
 
 .el-input__wrapper,
-.el-textarea__inner {
-  background: var(--surface-2);
+.el-textarea__inner,
+.el-select__wrapper {
+  background: var(--surface);
   box-shadow: 0 0 0 1px var(--border) inset;
   color: var(--text);
 }
 
 .el-input__wrapper:hover,
-.el-textarea__inner:hover {
+.el-textarea__inner:hover,
+.el-select__wrapper:hover {
   box-shadow: 0 0 0 1px var(--brand) inset;
 }
 
 .el-input__wrapper.is-focus,
-.el-textarea__inner:focus {
+.el-textarea__inner:focus,
+.el-select__wrapper.is-focused {
   box-shadow: 0 0 0 1px var(--brand) inset;
 }
 
@@ -112,11 +119,6 @@ body {
 .el-input__inner::placeholder,
 .el-textarea__inner::placeholder {
   color: var(--el-text-color-placeholder);
-}
-
-.el-select__wrapper {
-  background: var(--surface-2);
-  box-shadow: 0 0 0 1px var(--border) inset;
 }
 
 .el-select-dropdown {
@@ -144,14 +146,14 @@ body {
 .el-button--primary.plain {
   background-color: var(--surface-2) !important;
   border-color: var(--border) !important;
-  color: var(--brand-2) !important;
+  color: var(--brand) !important;
 }
 
 .el-button--primary.is-plain:hover,
 .el-button--primary.plain:hover {
   background-color: var(--surface-3) !important;
   border-color: var(--brand) !important;
-  color: var(--brand-2) !important;
+  color: var(--brand) !important;
 }
 
 .el-alert {
@@ -189,12 +191,6 @@ body {
   color: var(--muted);
 }
 
-.el-alert {
-  background: var(--surface-2);
-  border-color: var(--border);
-  color: var(--text);
-}
-
 .el-dialog,
 .el-drawer {
   background: var(--surface);
@@ -210,7 +206,7 @@ body {
 }
 
 .el-tabs__item.is-active {
-  color: var(--brand-2);
+  color: var(--brand);
 }
 
 .el-tabs__nav-wrap::after {

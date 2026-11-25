@@ -38,6 +38,19 @@ export const TOOL_DEFS = [
 
 export const INITIAL_CREDITS = Number(import.meta.env.VITE_INITIAL_CREDITS || 10)
 
+/** 品牌与顶部标语（集中维护，避免多处写死） */
+export const BRAND = {
+  name: '秋挽AI',
+  slogan: '专为服装电商行业打造的AI工具'
+}
+
+/** 工具 slug → 展示名（各页面统一引用，消除重复字面量） */
+export const TOOL_LABELS = {
+  'text-to-image': 'AI 绘画',
+  copywriting: '文案生成',
+  'text-to-video': 'AI 视频'
+}
+
 export function getToolDef(slug) {
   return TOOL_DEFS.find((t) => t.slug === slug) || null
 }
