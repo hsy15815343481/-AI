@@ -21,10 +21,12 @@ export default defineConfig({
     rollupOptions: {
       output: {
         manualChunks(id) {
-          if (id.includes('node_modules')) {
-            if (/[\\/]vue[\\/]|vue-router|pinia/.test(id)) return 'vendor-vue'
-            if (/@vue-flow/.test(id)) return 'vendor-flow'
-            if (/element-plus|@element-plus/.test(id)) return 'vendor-element'
+          // vue 全家桶与 element-plus 互相依赖，拆开成多个 chunk 会形成循环引用，
+          // 运行时触发 TDZ（Cannot access 'xxx' before initialization）；
+          // 合并进同一个 vendor chunk，由 rollup 统一排序初始化顺序。
+          if (!id.includes('node_modules')) return
+          if (/[\\/]vue[\\/]|vue-router|pinia|element-plus|@element-plus|@vue-flow|@vue[\\/]/.test(id)) {
+            return 'vendor'
           }
         }
       }
