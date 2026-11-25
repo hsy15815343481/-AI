@@ -131,7 +131,7 @@ const previewVisible = computed({
   width: 100%;
   height: 160px;
   border-radius: 6px;
-  background: #1c1917;
+  background: var(--surface-3);
 }
 .text {
   white-space: pre-wrap;
@@ -139,14 +139,15 @@ const previewVisible = computed({
   height: 160px;
   overflow: hidden;
   margin: 0;
+  color: var(--text);
 }
 .placeholder {
   display: flex;
   align-items: center;
   justify-content: center;
-  color: #78716c;
+  color: var(--muted);
   font-size: 13px;
-  border: 1px dashed #57534e;
+  border: 1px dashed var(--border);
 }
 .foot {
   display: flex;
