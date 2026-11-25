@@ -2,14 +2,20 @@ import { defineConfig } from 'vite'
 import vue from '@vitejs/plugin-vue'
 import Components from 'unplugin-vue-components/vite'
 import { ElementPlusResolver } from 'unplugin-vue-components/resolvers'
+import { viteSingleFile } from 'vite-plugin-singlefile'
 import { fileURLToPath, URL } from 'node:url'
 
 export default defineConfig({
+  // 静态托管在子路径（/app/<app_id>/）下发布，资源必须用相对路径；
+  // 若用默认 '/' 会生成根绝对路径 /assets/...，在子路径下丢失应用前缀导致 404。
+  base: './',
   plugins: [
     vue(),
     Components({
       resolvers: [ElementPlusResolver()]
-    })
+    }),
+    // 把 JS/CSS 全部内联进单个 index.html，避免托管环境下独立大 chunk 被中止/404
+    viteSingleFile()
   ],
   resolve: {
     alias: {
@@ -20,15 +26,8 @@ export default defineConfig({
     chunkSizeWarningLimit: 1000,
     rollupOptions: {
       output: {
-        manualChunks(id) {
-          // vue 全家桶与 element-plus 互相依赖，拆开成多个 chunk 会形成循环引用，
-          // 运行时触发 TDZ（Cannot access 'xxx' before initialization）；
-          // 合并进同一个 vendor chunk，由 rollup 统一排序初始化顺序。
-          if (!id.includes('node_modules')) return
-          if (/[\\/]vue[\\/]|vue-router|pinia|element-plus|@element-plus|@vue-flow|@vue[\\/]/.test(id)) {
-            return 'vendor'
-          }
-        }
+        // 动态导入也内联进同一文件，产物为单 HTML，不保留外链 chunk
+        inlineDynamicImports: true
       }
     }
   },
