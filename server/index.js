@@ -56,8 +56,10 @@ const TOOLS = [
 // ---- 工具函数 ----
 const hashPassword = (pw) => crypto.createHash('sha256').update(String(pw)).digest('hex')
 
-const IMAGE_SIZES = ['1:1', '3:4', '16:9']
-const VIDEO_RATIOS = ['16:9', '9:16', '1:1']
+const IMAGE_SIZES = ['random', '1:1', '3:4', '4:3', '2:3', '16:9']
+const VIDEO_RATIOS = ['random', '16:9', '9:16', '1:1', '21:9', '3:4']
+const IMAGE_RESOLUTIONS = ['2K', '4K']
+const VIDEO_RESOLUTIONS = ['480P', '720P', '1080P']
 
 function cleanText(v) {
   return String(v || '').trim()
@@ -206,6 +208,7 @@ const server = http.createServer(async (req, res) => {
         prompt,
         size: pickEnum(raw.size, IMAGE_SIZES, '1:1'),
         n: clampInt(raw.n, 1, 4, 1),
+        resolution: pickEnum(raw.resolution, IMAGE_RESOLUTIONS, '2K'),
         refs: cleanRefs(raw.refs)
       }
     } else {
@@ -215,6 +218,7 @@ const server = http.createServer(async (req, res) => {
         prompt,
         ratio: pickEnum(raw.ratio, VIDEO_RATIOS, '16:9'),
         duration: clampInt(raw.duration, 2, 30, 5),
+        resolution: pickEnum(raw.resolution, VIDEO_RESOLUTIONS, '720P'),
         refs: cleanRefs(raw.refs)
       }
     }
@@ -241,6 +245,7 @@ const server = http.createServer(async (req, res) => {
           ...channelOpts,
           size: params.size,
           n: params.n,
+          resolution: params.resolution,
           refs: params.refs
         })
       } else if (tool.slug === 'text-to-video') {
@@ -248,6 +253,7 @@ const server = http.createServer(async (req, res) => {
           ...channelOpts,
           ratio: params.ratio,
           duration: params.duration,
+          resolution: params.resolution,
           refs: params.refs
         })
       } else {

@@ -44,12 +44,55 @@ export const BRAND = {
   slogan: '专为服装电商行业打造的AI工具'
 }
 
+/** 首页创作区主标题与副标（卖点文案，可配置） */
+export const PAGE_HERO = {
+  title: '国内 / 跨境电商出图专家',
+  subtitle: '天花板的效果，跑量的价格，极致性价比'
+}
+
 /** 工具 slug → 展示名（各页面统一引用，消除重复字面量） */
 export const TOOL_LABELS = {
   'text-to-image': 'AI 绘画',
   copywriting: '文案生成',
   'text-to-video': 'AI 视频'
 }
+
+/** 比例选项；shape 用于组件内绘制比例轮廓小图标 */
+export const RATIO_OPTIONS = [
+  { value: 'random', label: '随机比例', shape: 'random' },
+  { value: '1:1', label: '1:1', shape: 'square' },
+  { value: '3:4', label: '3:4', shape: 'portrait' },
+  { value: '16:9', label: '16:9', shape: 'landscape' },
+  { value: '4:3', label: '4:3', shape: 'four-three' },
+  { value: '9:16', label: '9:16', shape: 'nine-sixteen' },
+  { value: '2:3', label: '2:3', shape: 'two-three' },
+  { value: '3:2', label: '3:2', shape: 'three-two' },
+  { value: '21:9', label: '21:9', shape: 'ultrawide' }
+]
+
+/** 各用途可用比例子集（随机比例通吃） */
+export const RATIO_KIND_MAP = {
+  image: ['random', '1:1', '3:4', '4:3', '2:3', '16:9'],
+  video: ['random', '16:9', '9:16', '1:1', '21:9', '3:4'],
+  copy: []
+}
+
+/** 分辨率档位，按用途区分 */
+export const RESOLUTION_OPTIONS = {
+  image: [
+    { value: '2K', label: '高清 2K' },
+    { value: '4K', label: '超清 4K' }
+  ],
+  video: [
+    { value: '480P', label: '标清 480P' },
+    { value: '720P', label: '高清 720P' },
+    { value: '1080P', label: '超清 1080P' }
+  ]
+}
+
+/** 默认比例 / 分辨率 */
+export const DEFAULT_RATIO = 'random'
+export const DEFAULT_RESOLUTION = { image: '2K', video: '720P', copy: '' }
 
 export function getToolDef(slug) {
   return TOOL_DEFS.find((t) => t.slug === slug) || null

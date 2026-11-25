@@ -3,11 +3,16 @@ import { onMounted, ref, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import { Plus, Search } from '@element-plus/icons-vue'
-import { PRESET_GROUPS, PRESETS } from '../lib/presets'
-import { TOOL_LABELS } from '../lib/constants'
+import { PRESET_GROUPS, PRESETS, getPreset } from '../lib/presets'
+import { TOOL_LABELS, PAGE_HERO, DEFAULT_RATIO, DEFAULT_RESOLUTION } from '../lib/constants'
+import { QUICK_TOOLS, getQuickTool } from '../lib/quickTools'
 import { useWorksStore } from '../stores/works'
 import { useAuthStore } from '../stores/auth'
 import { createGeneration } from '../api/generations'
+import { fetchChannels } from '../api/channels'
+import TypeSelect from '../components/controls/TypeSelect.vue'
+import ModelSelect from '../components/controls/ModelSelect.vue'
+import RatioResolutionSelect from '../components/controls/RatioResolutionSelect.vue'
 
 const router = useRouter()
 const works = useWorksStore()
@@ -18,6 +23,15 @@ const submitting = ref(false)
 const activeGroup = ref('all')
 const keyword = ref('')
 
+// 创作卡当前状态
+const currentKey = ref('agent')
+const model = ref('')
+const channel = ref('')
+const ratio = ref(DEFAULT_RATIO)
+const resolution = ref(DEFAULT_RESOLUTION.image)
+const refs = ref([])
+const modelOptions = ref([])
+
 const GROUP_COVER = {
   image: 'linear-gradient(135deg,#1e3a5f,#0e7490)',
   copy: 'linear-gradient(135deg,#3b2f5f,#6d28d9)',
@@ -25,7 +39,15 @@ const GROUP_COVER = {
   edit: 'linear-gradient(135deg,#2b313d,#4b5563)'
 }
 
+const currentType = computed(() => getQuickTool(currentKey.value))
+const kind = computed(() => currentType.value?.kind || 'image')
+const preset = computed(() =>
+  currentType.value?.presetSlug ? getPreset(currentType.value.presetSlug) : null
+)
+const costCredits = computed(() => currentType.value?.costCredits || 2)
+
 onMounted(async () => {
+  loadChannels()
   if (!auth.isLoggedIn) return
   try {
     await works.loadWorks()
@@ -33,6 +55,29 @@ onMounted(async () => {
     // 后端未接入时保留空态
   }
 })
+
+async function loadChannels() {
+  try {
+    const channels = await fetchChannels()
+    modelOptions.value = channels.flatMap((c) =>
+      c.models.map((m) => {
+        const name = typeof m === 'string' ? m : m.model
+        return {
+          key: `${c.id}:${name}`,
+          channel: c.id,
+          model: name,
+          label: typeof m === 'string' ? m : m.label || name,
+          desc: typeof m === 'string' ? '' : m.desc || '',
+          fit: typeof m === 'string' ? '' : m.fit || '',
+          kind: c.kind,
+          available: typeof m === 'string' ? false : Boolean(m.available)
+        }
+      })
+    )
+  } catch {
+    modelOptions.value = []
+  }
+}
 
 const filtered = computed(() =>
   PRESETS.filter((p) => {
@@ -66,6 +111,40 @@ function hasMedia(item) {
   return Boolean(item.resultUrl) && !isMock(item)
 }
 
+function applyType(tool) {
+  currentKey.value = tool.key
+  const p = tool.presetSlug ? getPreset(tool.presetSlug) : null
+  prompt.value = p?.prompt || ''
+  const params = p?.params || {}
+  if (tool.kind === 'video') {
+    ratio.value = params.ratio || DEFAULT_RATIO
+    resolution.value = params.resolution || DEFAULT_RESOLUTION.video
+  } else {
+    ratio.value = params.size || params.ratio || DEFAULT_RATIO
+    resolution.value = params.resolution || DEFAULT_RESOLUTION.image
+  }
+  model.value = ''
+  channel.value = ''
+}
+
+function onTypeSelect(tool) {
+  applyType(tool)
+}
+
+function onModelSelect(opt) {
+  channel.value = opt.channel
+  model.value = opt.model
+}
+
+function onRatioChange({ ratio: r, resolution: res }) {
+  if (r !== undefined) ratio.value = r
+  if (res !== undefined) resolution.value = res
+}
+
+function onUploadClick() {
+  ElMessage.info('参考图上传将在图生图渠道接入后开放')
+}
+
 function reuse(preset) {
   router.push({ path: `/tool/${preset.targetTool}`, query: { preset: preset.slug } })
 }
@@ -80,11 +159,24 @@ async function onGenerate() {
     ElMessage.warning('请填写提示词')
     return
   }
+  const tool = currentType.value
   submitting.value = true
   try {
+    const params = { prompt: prompt.value, refs: refs.value }
+    if (tool.kind === 'video') {
+      params.ratio = ratio.value
+      params.duration = preset.value?.params?.duration || 5
+      params.resolution = resolution.value
+    } else {
+      params.size = ratio.value
+      params.n = preset.value?.params?.n || 1
+      params.resolution = resolution.value
+    }
     await createGeneration({
-      tool_slug: 'text-to-image',
-      params: { prompt: prompt.value, size: '1:1', n: 1 }
+      tool_slug: tool.targetTool,
+      channel: channel.value,
+      model: model.value,
+      params
     })
     ElMessage.success('已提交生成，可在我的作品查看结果')
     prompt.value = ''
@@ -98,11 +190,17 @@ async function onGenerate() {
 </script>
 
 <template>
+  <!-- 页面主标题 -->
+  <section class="hero-title">
+    <h1>{{ PAGE_HERO.title }}</h1>
+    <p class="muted">{{ PAGE_HERO.subtitle }}</p>
+  </section>
+
   <!-- 顶部创作卡片 -->
   <section class="hero-card">
-    <div class="upload-box">
+    <div class="upload-box" @click="onUploadClick">
       <el-icon class="upload-plus"><Plus /></el-icon>
-      <span class="count">0/10</span>
+      <span class="count">{{ refs.length }}/10</span>
     </div>
     <div class="hero-main">
       <el-input
@@ -114,17 +212,36 @@ async function onGenerate() {
       />
       <div class="hero-bar">
         <div class="chips">
-          <span class="chip">个人仓库</span>
-          <span class="chip">万能出图 Agent</span>
-          <span class="chip">重点 VT</span>
-          <span class="chip">随机比例 2K</span>
+          <TypeSelect v-model="currentKey" @select="onTypeSelect" />
+          <ModelSelect v-model="model" :kind="kind" :options="modelOptions" @select="onModelSelect" />
+          <RatioResolutionSelect
+            v-model:ratio="ratio"
+            v-model:resolution="resolution"
+            :kind="kind"
+            @change="onRatioChange"
+          />
         </div>
         <div class="hero-right">
-          <span class="muted">消耗 2 积分</span>
+          <span class="muted">消耗 {{ costCredits }} 积分</span>
           <el-button type="primary" :loading="submitting" @click="onGenerate">生成</el-button>
         </div>
       </div>
     </div>
+  </section>
+
+  <!-- 快捷功能胶囊 -->
+  <section class="quick-caps">
+    <button
+      v-for="t in QUICK_TOOLS"
+      :key="t.key"
+      class="caps"
+      :class="{ pending: t.pending, active: t.key === currentKey }"
+      type="button"
+      @click="t.pending ? ElMessage.warning(`「${t.name}」待接入对应模型渠道，敬请期待`) : applyType(t)"
+    >
+      <span class="caps-icon">{{ t.icon }}</span>
+      <span>{{ t.name }}</span>
+    </button>
   </section>
 
   <!-- 最近项目（次要区块） -->
@@ -164,7 +281,7 @@ async function onGenerate() {
       <el-input v-model="keyword" class="search" :prefix-icon="Search" placeholder="搜索模板..." />
     </div>
 
-    <div class="caps">
+    <div class="filter-caps">
       <button class="cap" :class="{ on: activeGroup === 'all' }" @click="activeGroup = 'all'">全部</button>
       <button
         v-for="g in PRESET_GROUPS"
@@ -197,6 +314,17 @@ async function onGenerate() {
 </template>
 
 <style scoped>
+/* 页面主标题 */
+.hero-title {
+  margin: 4px 0 18px;
+}
+
+.hero-title h1 {
+  font-size: 26px;
+  margin: 0 0 6px;
+  color: var(--text);
+}
+
 /* 顶部创作卡片 */
 .hero-card {
   display: flex;
@@ -220,6 +348,11 @@ async function onGenerate() {
   justify-content: center;
   gap: 6px;
   color: var(--muted);
+  cursor: pointer;
+}
+
+.upload-box:hover {
+  border-color: var(--brand);
 }
 
 .upload-plus {
@@ -251,19 +384,49 @@ async function onGenerate() {
   flex-wrap: wrap;
 }
 
-.chip {
-  font-size: 12px;
-  color: var(--muted);
-  background: var(--surface-2);
-  border: 1px solid var(--border);
-  border-radius: 999px;
-  padding: 5px 12px;
-}
-
 .hero-right {
   display: flex;
   align-items: center;
   gap: 12px;
+}
+
+/* 快捷功能胶囊 */
+.quick-caps {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-top: 16px;
+}
+
+.caps {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  color: var(--text);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  padding: 6px 12px;
+  cursor: pointer;
+}
+
+.caps:hover {
+  border-color: var(--brand);
+}
+
+.caps.active {
+  background: var(--surface-2);
+  border-color: var(--brand);
+  color: var(--brand);
+}
+
+.caps.pending {
+  opacity: 0.5;
+}
+
+.caps-icon {
+  font-size: 13px;
 }
 
 /* 区块通用 */
@@ -356,7 +519,7 @@ async function onGenerate() {
 }
 
 /* 模板市场 */
-.caps {
+.filter-caps {
   display: flex;
   gap: 8px;
   flex-wrap: wrap;

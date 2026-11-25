@@ -160,7 +160,7 @@ export const PRESETS = [
     targetTool: 'text-to-video',
     badge: '',
     description: '商品运镜展示短视频。',
-    params: { ratio: '9:16', duration: 5 },
+    params: { ratio: '9:16', duration: 5, resolution: '720P' },
     prompt: '【商品展示视频】主体：____（填商品）；镜头：缓慢环绕/推拉展示整体与细节；背景干净，光线均匀；节奏轻快，突出商品质感；时长约 5 秒，竖屏。'
   },
   {
@@ -171,7 +171,7 @@ export const PRESETS = [
     targetTool: 'text-to-video',
     badge: '待接入',
     description: '模特走动/转身穿搭视频，需参考图渠道。',
-    params: { ratio: '9:16', duration: 5 },
+    params: { ratio: '9:16', duration: 5, resolution: '720P' },
     prompt: '【穿搭上身视频】服装：____（填款式）；模特自然走动并转身展示版型；场景简洁；光线自然，服装颜色还原；竖屏短视频，时长约 5 秒。'
   },
 
@@ -283,7 +283,7 @@ export const PRESETS = [
     targetTool: 'text-to-video',
     badge: '待接入',
     description: '短循环动图，后续接入动图渠道。',
-    params: { ratio: '1:1', duration: 3 },
+    params: { ratio: '1:1', duration: 3, resolution: '480P' },
     prompt: '【GIF 动图】主体：____；动作：轻微循环摆动/转场；画面简洁，循环自然，短时长。'
   }
 ]

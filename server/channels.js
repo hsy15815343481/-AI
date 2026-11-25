@@ -61,14 +61,34 @@ async function getJson(channel, path) {
 
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms))
 
-// 前端存比例（1:1 / 3:4 / 16:9），渠道请求体需像素尺寸；这里映射为两家渠道都接受的安全值
+// 前端存比例（1:1 / 3:4 / 16:9 等），渠道请求体需像素尺寸；这里映射为两家渠道都接受的安全值
 const IMAGE_SIZE_PX = {
   '1:1': '1024x1024',
   '3:4': '864x1152',
-  '16:9': '1344x768'
+  '4:3': '1152x864',
+  '16:9': '1344x768',
+  '9:16': '768x1344',
+  '2:3': '864x1296',
+  '3:2': '1296x864',
+  '21:9': '1536x640'
 }
 function sizeToPx(size) {
-  return IMAGE_SIZE_PX[size] || '1024x1024'
+  return IMAGE_SIZE_PX[size] || IMAGE_SIZE_PX['1:1']
+}
+
+/** 取渠道默认模型名（兼容 models 为对象数组或字符串数组） */
+function defaultModel(channel) {
+  const first = channel?.models?.[0]
+  return typeof first === 'string' ? first : first?.model || ''
+}
+
+/** 按分辨率档位放大像素（4K 相对 2K 边长翻倍；渠道不支持时由调用结果反馈，待校准） */
+function pxForResolution(px, resolution) {
+  if (resolution !== '4K') return px
+  const [w, h] = px.split('x').map(Number)
+  if (!w || !h) return px
+  const scale = 2
+  return `${Math.min(2048, w * scale)}x${Math.min(2048, h * scale)}`
 }
 
 /**
@@ -81,7 +101,7 @@ export async function generateCopywriting(topic, tone, opts = {}) {
   const channel = getChannel('chat', opts.channelId)
   if (!channel || !channel.apiKey) return mockCopywriting(topic, tone)
 
-  const model = opts.model || channel.models[0]
+  const model = opts.model || defaultModel(channel)
   const prompt = `请围绕主题「${topic}」写一段${tone || '简洁'}风格的社交/营销文案，控制在 120 字以内。`
   const data = await postJson(channel, '/chat/completions', {
     model,
@@ -104,11 +124,11 @@ export async function generateImage(prompt, opts = {}) {
   // 未配置图片渠道/模型时回退 mock（如仅接了 DeepSeek 文案渠道，其不提供文生图）
   if (!channel || !channel.apiKey) return mockImage(prompt)
 
-  const model = opts.model || channel.models[0]
+  const model = opts.model || defaultModel(channel)
   const body = {
     model,
     prompt,
-    size: sizeToPx(opts.size)
+    size: pxForResolution(sizeToPx(opts.size), opts.resolution)
   }
   if (opts.n) body.n = opts.n
   // 参考图预留：当前已接通渠道（智谱 CogView / GLM-Image）为纯文生图，不接受参考图字段。
@@ -143,7 +163,7 @@ export async function generateVideo(prompt, opts = {}) {
   // 未配置视频渠道时回退 mock（不产生真实调用费用）
   if (!channel || !channel.apiKey) return mockVideo(prompt)
 
-  const model = opts.model || channel.models[0]
+  const model = opts.model || defaultModel(channel)
   const refs = Array.isArray(opts.refs) ? opts.refs.filter(Boolean) : []
 
   if (channel.id === 'bailian-wanxiang') {
@@ -163,6 +183,7 @@ async function generateVideoVolc(channel, model, prompt, refs, opts) {
     generate_audio: true,
     ratio: opts.ratio || '16:9',
     duration: opts.duration || 5,
+    resolution: opts.resolution || '720P',
     watermark: true
   })
   const taskId = create.id

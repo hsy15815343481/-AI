@@ -25,7 +25,11 @@ const NOTE_COLORS = ['#fde68a', '#bbf7d0', '#bfdbfe', '#fecaca', '#e9d5ff']
 function modelOptions(kind) {
   return channels.value
     .filter((c) => c.kind === kind)
-    .flatMap((c) => c.models.map((m) => ({ channel: c.id, model: m, label: `${c.name} · ${m}` })))
+    .flatMap((c) => c.models.map((m) => {
+      const name = typeof m === 'string' ? m : m.model
+      const label = typeof m === 'string' ? `${c.name} · ${m}` : `${c.name} · ${m.label || m.model}`
+      return { channel: c.id, model: name, label }
+    }))
 }
 
 // 选中模型时同步回写渠道 id，保证后端按渠道精确定位（而非回退到首个已配 Key 的渠道）

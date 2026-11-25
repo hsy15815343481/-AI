@@ -36,7 +36,11 @@ const modelKind = computed(() => KIND_BY_TYPE[props.type] || '')
 const modelOptions = computed(() =>
   channels.value
     .filter((c) => c.kind === modelKind.value)
-    .flatMap((c) => c.models.map((m) => ({ channel: c.id, model: m, label: `${c.name} · ${m}` })))
+    .flatMap((c) => c.models.map((m) => {
+      const name = typeof m === 'string' ? m : m.model
+      const label = typeof m === 'string' ? `${c.name} · ${m}` : `${c.name} · ${m.label || m.model}`
+      return { channel: c.id, model: name, label }
+    }))
 )
 function onNodeModelChange(val) {
   const opt = modelOptions.value.find((o) => o.model === val)

@@ -1,13 +1,16 @@
 <script setup>
-import { reactive, ref, computed, watch } from 'vue'
+import { reactive, ref, computed, watch, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
-import { getToolDef } from '../lib/constants'
+import { getToolDef, DEFAULT_RATIO, DEFAULT_RESOLUTION } from '../lib/constants'
 import { getPreset } from '../lib/presets'
 import { createGeneration, fetchGeneration } from '../api/generations'
+import { fetchChannels } from '../api/channels'
 import { useAuthStore } from '../stores/auth'
 import { useWalletStore } from '../stores/wallet'
 import ResultGallery from '../components/ResultGallery.vue'
+import ModelSelect from '../components/controls/ModelSelect.vue'
+import RatioResolutionSelect from '../components/controls/RatioResolutionSelect.vue'
 
 const route = useRoute()
 const router = useRouter()
@@ -20,12 +23,31 @@ const form = reactive({})
 const submitting = ref(false)
 const polling = ref(false)
 const result = ref(null)
+const modelOptions = ref([])
+
+const kind = computed(
+  () =>
+    ({ 'text-to-image': 'image', 'text-to-video': 'video', copywriting: 'chat' }[tool.value?.slug] ||
+      'image')
+)
+
+// 比例字段：图片存 size，视频存 ratio
+const ratioBound = computed({
+  get: () => (kind.value === 'video' ? form.ratio : form.size) || DEFAULT_RATIO,
+  set: (v) => {
+    if (kind.value === 'video') form.ratio = v
+    else form.size = v
+  }
+})
 
 const initForm = () => {
   if (!tool.value) return
   for (const field of tool.value.fields) {
     form[field.key] = field.type === 'select' ? field.options[0] : ''
   }
+  form.model = ''
+  form.channel = ''
+  form.resolution = DEFAULT_RESOLUTION[kind.value] || ''
   // 模板预置参数与提示词
   if (preset.value) {
     if (preset.value.params) Object.assign(form, preset.value.params)
@@ -42,6 +64,36 @@ initForm()
 
 // 同详情页内切换模板或复用作品时，重新回填
 watch(() => route.query, initForm)
+
+onMounted(loadChannels)
+
+async function loadChannels() {
+  try {
+    const channels = await fetchChannels()
+    modelOptions.value = channels.flatMap((c) =>
+      c.models.map((m) => {
+        const name = typeof m === 'string' ? m : m.model
+        return {
+          key: `${c.id}:${name}`,
+          channel: c.id,
+          model: name,
+          label: typeof m === 'string' ? m : m.label || name,
+          desc: typeof m === 'string' ? '' : m.desc || '',
+          fit: typeof m === 'string' ? '' : m.fit || '',
+          kind: c.kind,
+          available: typeof m === 'string' ? false : Boolean(m.available)
+        }
+      })
+    )
+  } catch {
+    modelOptions.value = []
+  }
+}
+
+function onModelSelect(opt) {
+  form.channel = opt.channel
+  form.model = opt.model
+}
 
 const validate = () => {
   for (const field of tool.value.fields) {
@@ -82,6 +134,8 @@ const onSubmit = async () => {
   try {
     const created = await createGeneration({
       tool_slug: tool.value.slug,
+      channel: form.channel || '',
+      model: form.model || '',
       params: { ...form }
     })
     if (created?.id) {
@@ -118,13 +172,44 @@ const onSubmit = async () => {
       <el-col :xs="24" :md="10">
         <el-card>
           <el-form label-position="top" @submit.prevent>
-            <el-form-item v-for="field in tool.fields" :key="field.key" :label="field.label" :required="field.required">
-              <el-input v-if="field.type === 'textarea'" v-model="form[field.key]" type="textarea" :rows="4" :placeholder="field.placeholder" />
-              <el-select v-else-if="field.type === 'select'" v-model="form[field.key]" style="width: 100%">
+            <div class="form-controls">
+              <ModelSelect
+                v-model="form.model"
+                :kind="kind"
+                :options="modelOptions"
+                @select="onModelSelect"
+              />
+              <RatioResolutionSelect
+                v-if="kind !== 'chat'"
+                v-model:ratio="ratioBound"
+                v-model:resolution="form.resolution"
+                :kind="kind"
+              />
+            </div>
+
+            <el-form-item
+              v-for="field in tool.fields"
+              :key="field.key"
+              :label="field.label"
+              :required="field.required"
+            >
+              <el-input
+                v-if="field.type === 'textarea'"
+                v-model="form[field.key]"
+                type="textarea"
+                :rows="4"
+                :placeholder="field.placeholder"
+              />
+              <el-select
+                v-else-if="field.type === 'select' && field.key !== 'size' && field.key !== 'ratio'"
+                v-model="form[field.key]"
+                style="width: 100%"
+              >
                 <el-option v-for="opt in field.options" :key="opt" :label="opt" :value="opt" />
               </el-select>
-              <el-input v-else v-model="form[field.key]" :placeholder="field.placeholder" />
+              <el-input v-else-if="field.key !== 'size' && field.key !== 'ratio'" v-model="form[field.key]" :placeholder="field.placeholder" />
             </el-form-item>
+
             <el-button type="primary" :loading="submitting || polling" @click="onSubmit">
               {{ submitting ? '提交中' : polling ? '生成中' : '生成' }}
             </el-button>
@@ -143,5 +228,12 @@ const onSubmit = async () => {
 <style scoped>
 .preset-tip {
   margin: 12px 0 16px;
+}
+
+.form-controls {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 16px;
 }
 </style>
