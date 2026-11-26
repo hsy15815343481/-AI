@@ -20,7 +20,7 @@ export const QUICK_TOOLS = [
   // 出图套图
   { key: 'agent', name: '万能出图Agent', icon: '✨', group: 'render', kind: 'image', targetTool: 'text-to-image', presetSlug: '', costCredits: 2, pending: false },
   { key: 'main-set', name: '主图套图', icon: '🖼️', group: 'render', kind: 'image', targetTool: 'text-to-image', presetSlug: 'main-set', costCredits: 2, pending: false },
-  { key: 'remake', name: '主图复刻', icon: '📋', group: 'render', kind: 'image', targetTool: 'text-to-image', presetSlug: 'remake', costCredits: 2, pending: true },
+  { key: 'remake', name: '主图复刻', icon: '📋', group: 'render', kind: 'image', targetTool: 'text-to-image', presetSlug: 'remake', costCredits: 2, pending: false },
   { key: 'multi-angle', name: '主图裂变/多角度', icon: '🔁', group: 'render', kind: 'image', targetTool: 'text-to-image', presetSlug: 'multi-angle', costCredits: 2, pending: false },
 
   // 白底与场景
@@ -32,17 +32,17 @@ export const QUICK_TOOLS = [
   // 模特与穿戴
   { key: 'model-wear', name: 'AI服装上身', icon: '🧍', group: 'model', kind: 'image', targetTool: 'text-to-image', presetSlug: 'model-wear', costCredits: 2, pending: true },
   { key: 'tryon-all', name: '万物穿戴', icon: '👕', group: 'model', kind: 'image', targetTool: 'text-to-image', presetSlug: 'tryon-all', costCredits: 2, pending: true },
-  { key: 'pose-split', name: '姿势裂变', icon: '🧘', group: 'model', kind: 'image', targetTool: 'text-to-image', presetSlug: 'pose-split', costCredits: 2, pending: true },
+  { key: 'pose-split', name: '姿势裂变', icon: '🧘', group: 'model', kind: 'image', targetTool: 'text-to-image', presetSlug: 'pose-split', costCredits: 2, pending: false },
 
   // 图片编辑
   { key: 'replace-product', name: '替换产品', icon: '🔄', group: 'edit', kind: 'image', targetTool: 'text-to-image', presetSlug: 'replace-product', costCredits: 2, pending: true },
   { key: 'remove-watermark', name: '去除水印', icon: '🚫', group: 'edit', kind: 'image', targetTool: 'text-to-image', presetSlug: 'remove-watermark', costCredits: 2, pending: true },
-  { key: 'recolor', name: '一键换色', icon: '🎨', group: 'edit', kind: 'image', targetTool: 'text-to-image', presetSlug: 'recolor', costCredits: 2, pending: true },
-  { key: 'smooth-cloth', name: '服装去褶皱', icon: '🧺', group: 'edit', kind: 'image', targetTool: 'text-to-image', presetSlug: 'smooth-cloth', costCredits: 2, pending: true },
+  { key: 'recolor', name: '一键换色', icon: '🎨', group: 'edit', kind: 'image', targetTool: 'text-to-image', presetSlug: 'recolor', costCredits: 2, pending: false },
+  { key: 'smooth-cloth', name: '服装去褶皱', icon: '🧺', group: 'edit', kind: 'image', targetTool: 'text-to-image', presetSlug: 'smooth-cloth', costCredits: 2, pending: false },
   { key: 'cutout', name: '精准抠图', icon: '✂️', group: 'edit', kind: 'image', targetTool: 'text-to-image', presetSlug: 'cutout', costCredits: 2, pending: true },
   { key: 'upscale', name: '高清放大', icon: '🔎', group: 'edit', kind: 'image', targetTool: 'text-to-image', presetSlug: 'upscale', costCredits: 2, pending: true },
-  { key: 'img-translate', name: '图片翻译', icon: '🌐', group: 'edit', kind: 'image', targetTool: 'text-to-image', presetSlug: 'img-translate', costCredits: 2, pending: true },
-  { key: 'clean-img', name: '洗图', icon: '✨', group: 'edit', kind: 'image', targetTool: 'text-to-image', presetSlug: 'clean-img', costCredits: 2, pending: true },
+  { key: 'img-translate', name: '图片翻译', icon: '🌐', group: 'edit', kind: 'image', targetTool: 'text-to-image', presetSlug: 'img-translate', costCredits: 2, pending: false },
+  { key: 'clean-img', name: '洗图', icon: '✨', group: 'edit', kind: 'image', targetTool: 'text-to-image', presetSlug: 'clean-img', costCredits: 2, pending: false },
 
   // 视频动图
   { key: 'gif', name: 'GIF动图', icon: '🎞', group: 'video', kind: 'video', targetTool: 'text-to-video', presetSlug: 'gif', costCredits: 5, pending: true }

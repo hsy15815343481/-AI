@@ -17,7 +17,7 @@ export const PRESET_GROUPS = [
   { key: 'image', label: '电商出图' },
   { key: 'copy', label: '营销文案' },
   { key: 'video', label: '商品视频' },
-  { key: 'edit', label: '图片编辑（待接入）' }
+  { key: 'edit', label: '图片编辑' }
 ]
 
 export const PRESETS = [
@@ -116,8 +116,8 @@ export const PRESETS = [
     title: '姿势裂变',
     icon: '🧘',
     targetTool: 'text-to-image',
-    badge: '待接入',
-    description: '同一模特不同姿势成套出图，需参考图渠道。',
+    badge: '',
+    description: '同一服装/形象不同姿势成套出图（文生图近似，非参考图保真）。',
     params: { size: '3:4', n: 4 },
     prompt: '【姿势裂变】人物/服装：____；姿势：正面站立、侧身、坐姿、回眸各一张；场景与光线保持一致；人物形象统一；高清穿搭实拍感。'
   },
@@ -181,7 +181,7 @@ export const PRESETS = [
     prompt: '【穿搭上身视频】服装：____（填款式）；模特自然走动并转身展示版型；场景简洁；光线自然，服装颜色还原；竖屏短视频，时长约 5 秒。'
   },
 
-  // ---- 图片编辑（待接入）----
+  // ---- 图片编辑 ----
   {
     slug: 'replace-product',
     group: 'edit',
@@ -199,8 +199,8 @@ export const PRESETS = [
     title: '主图复刻',
     icon: '📋',
     targetTool: 'text-to-image',
-    badge: '待接入',
-    description: '参考图的构图/风格复刻一张新主图。',
+    badge: '',
+    description: '按参考图的构图/风格复刻新主图（文生图近似，非逐像素还原）。',
     params: { size: '1:1' },
     prompt: '【主图复刻】参考图的构图、机位、光影与风格；主体换成：____（填自有商品）；保持画面比例与排版一致，高清写实。'
   },
@@ -221,10 +221,10 @@ export const PRESETS = [
     title: '一键换色',
     icon: '🎨',
     targetTool: 'text-to-image',
-    badge: '待接入',
-    description: '保持款式不变，更换商品颜色。',
+    badge: '',
+    description: '保持款式不变，近似更换商品颜色（非严格保真换色）。',
     params: { size: '1:1' },
-    prompt: '【一键换色】款式、面料、光影完全不变；将商品颜色改为：____（填颜色）；颜色过渡自然，材质质感保留。'
+    prompt: '【一键换色】款式、面料、光影尽量不变；将商品颜色改为：____（填颜色）；颜色过渡自然，材质质感保留。'
   },
   {
     slug: 'smooth-cloth',
@@ -232,8 +232,8 @@ export const PRESETS = [
     title: '服装去褶皱',
     icon: '🧺',
     targetTool: 'text-to-image',
-    badge: '待接入',
-    description: '抚平衣物褶皱，保留版型纹理。',
+    badge: '',
+    description: '提示词抚平衣物褶皱，保留版型纹理（近似处理）。',
     params: { size: '1:1' },
     prompt: '【去褶皱】抚平服装褶皱与折痕，面料平整自然；保留原有版型、颜色和布料纹理，不改变款式。'
   },
@@ -265,10 +265,10 @@ export const PRESETS = [
     title: '图片翻译',
     icon: '🌐',
     targetTool: 'text-to-image',
-    badge: '待接入',
-    description: '替换图中文字为目标语言，保持排版。',
+    badge: '',
+    description: '图中文字翻译为目标语言（文生图近似，复杂排版可能不准）。',
     params: { size: '1:1' },
-    prompt: '【图片翻译】将图中文字翻译为：____（填目标语言）；保留原字体风格、位置与排版，译文自然通顺。'
+    prompt: '【图片翻译】将图中文字翻译为：____（填目标语言）；尽量保留原字体风格、位置与排版，译文自然通顺。'
   },
   {
     slug: 'clean-img',
@@ -276,8 +276,8 @@ export const PRESETS = [
     title: '洗图',
     icon: '✨',
     targetTool: 'text-to-image',
-    badge: '待接入',
-    description: '降噪调色、净化画面质感。',
+    badge: '',
+    description: '降噪调色、净化画面质感（近似增强）。',
     params: { size: '1:1' },
     prompt: '【洗图】降低噪点、校正偏色、提升通透感与对比度；保留真实材质，不过度磨皮，画面干净清晰。'
   },
