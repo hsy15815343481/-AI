@@ -1,18 +1,41 @@
 <script setup>
-import { computed, ref, onMounted, provide } from 'vue'
+import { computed, ref, onMounted, provide, nextTick } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
 import { VueFlow, useVueFlow, Panel } from '@vue-flow/core'
 import { Background } from '@vue-flow/background'
+import { Plus } from '@element-plus/icons-vue'
 import '@vue-flow/core/dist/style.css'
 import WfNode from '../components/workflow/WfNode.vue'
 import { useWorkflowStore } from '../stores/workflow'
 import { NODE_TYPES } from '../lib/workflow'
+import { getWorkflowTemplate } from '../lib/workflowTemplates'
 import { fetchChannels } from '../api/channels'
 
 const store = useWorkflowStore()
+const route = useRoute()
+const router = useRouter()
 const { fitView, project } = useVueFlow()
+
+// 空白画布引导：无节点时展示起步入口
+const isEmpty = computed(() => store.nodes.length === 0)
+function goTemplates() {
+  router.push('/')
+}
+
+// 左侧节点面板：收起为窄竖条，点「添加」展开分组清单
+const panelOpen = ref(false)
+const flatNodes = computed(() =>
+  Object.entries(NODE_TYPES).map(([type, def]) => ({ type, ...def }))
+)
 
 const channels = ref([])
 onMounted(async () => {
+  const tpl = getWorkflowTemplate(route.query.template)
+  if (tpl) {
+    store.loadTemplate(tpl)
+    await nextTick()
+    setTimeout(() => fitView({ padding: 0.25, includeHiddenNodes: false }), 60)
+  }
   try {
     channels.value = await fetchChannels()
   } catch {
@@ -93,23 +116,43 @@ async function onRun() {
 
 <template>
   <div class="wf-page">
-    <aside class="side">
-      <div class="side-title">添加节点</div>
-      <div v-for="(items, category) in groups" :key="category" class="group">
-        <div class="group-name">{{ category }}</div>
-        <div
-          v-for="item in items"
+    <aside class="side" :class="{ expanded: panelOpen }">
+      <button class="side-add" @click="panelOpen = !panelOpen">
+        <el-icon><Plus /></el-icon>
+        <span v-if="panelOpen">添加节点</span>
+      </button>
+
+      <!-- 收起态：窄竖条快捷图标，点击直接添加 -->
+      <div class="rail-icons">
+        <button
+          v-for="item in flatNodes"
           :key="item.type"
-          class="node-item"
-          draggable="true"
-          @dragstart="onDragStart($event, item.type)"
+          class="rail-icon"
+          :title="item.label"
           @click="addNode(item.type)"
         >
           <span class="ni-icon">{{ item.icon }}</span>
-          <span>{{ item.label }}</span>
-        </div>
+        </button>
       </div>
-      <div class="side-tip">可点击添加，或直接把节点拖到画布；从节点右侧端口拖线到下一节点左侧端口即可连线</div>
+
+      <!-- 展开态：分组节点清单，可点击或拖拽到画布 -->
+      <div v-if="panelOpen" class="side-list">
+        <div v-for="(items, category) in groups" :key="category" class="group">
+          <div class="group-name">{{ category }}</div>
+          <div
+            v-for="item in items"
+            :key="item.type"
+            class="node-item"
+            draggable="true"
+            @dragstart="onDragStart($event, item.type)"
+            @click="addNode(item.type)"
+          >
+            <span class="ni-icon">{{ item.icon }}</span>
+            <span>{{ item.label }}</span>
+          </div>
+        </div>
+        <div class="side-tip">可点击添加，或拖到画布；拖到目标节点松手即可连线</div>
+      </div>
     </aside>
 
     <div class="canvas" @dragover.prevent @drop="onDrop">
@@ -124,7 +167,7 @@ async function onRun() {
         @node-click="onNodeClick"
         @pane-click="store.select(null)"
       >
-        <Background :gap="24" color="#3f3a36" />
+        <Background :gap="24" color="#d5dbe3" />
 
         <Panel position="top-right">
           <div class="toolbar">
@@ -142,6 +185,20 @@ async function onRun() {
       </VueFlow>
 
       <el-alert v-if="store.lastError" :title="store.lastError" type="error" class="err-bar" :closable="false" />
+
+      <!-- 空白画布引导：无节点时展示起步入口 -->
+      <div v-if="isEmpty" class="canvas-empty">
+        <div class="empty-card">
+          <div class="empty-icon">🧩</div>
+          <h3>从一个节点开始搭建工作流</h3>
+          <p class="muted">左侧窄条点击直接添加节点，或从模板市场套用整套流程。</p>
+          <div class="empty-actions">
+            <el-button type="primary" plain @click="addNode('text')">添加文本节点</el-button>
+            <el-button plain @click="addNode('image')">添加图片节点</el-button>
+            <el-button @click="goTemplates">浏览模板</el-button>
+          </div>
+        </div>
+      </div>
     </div>
 
     <aside v-if="selectedNode" class="params">
@@ -229,8 +286,17 @@ async function onRun() {
               <el-option v-for="n in [1, 2, 3, 4]" :key="n" :label="`${n} 张`" :value="n" />
             </el-select>
           </el-form-item>
+          <el-form-item label="清晰度">
+            <el-select v-model="selectedNode.data.resolution" style="width:100%">
+              <el-option label="高清 2K" value="2K" />
+              <el-option label="超清 4K" value="4K" />
+            </el-select>
+          </el-form-item>
           <el-form-item label="提示词（无上游文本时使用）">
             <el-input v-model="selectedNode.data.prompt" type="textarea" :rows="3" />
+          </el-form-item>
+          <el-form-item label="参考图">
+            <el-button size="small" disabled>上传参考图（待图生图渠道接入）</el-button>
           </el-form-item>
           <el-alert type="info" :closable="false" title="参考图由上游图片节点连线传入；当前渠道为文生图，参考图先预留待后续支持。" class="params-alert" />
           <el-form-item v-if="selectedNode.data.resultUrl" label="输出图片">
@@ -275,19 +341,67 @@ async function onRun() {
 <style scoped>
 .wf-page {
   display: flex;
+  width: 100%;
   height: calc(100vh - 56px);
-  background: #1c1917;
+  background: var(--bg);
 }
 .side {
-  width: 200px;
-  border-right: 1px solid #292524;
-  padding: 14px;
+  width: 64px;
+  border-right: 1px solid var(--border);
+  padding: 12px 10px;
   overflow-y: auto;
-  color: #e7e5e4;
+  color: var(--text);
+  transition: width 0.18s ease;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
 }
-.side-title { font-weight: 700; margin-bottom: 12px; }
-.group { margin-bottom: 14px; }
-.group-name { font-size: 12px; color: #a8a29e; margin-bottom: 6px; }
+.side.expanded {
+  width: 200px;
+  padding: 14px;
+}
+
+.side-add {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: 100%;
+  border: 1px dashed var(--border);
+  background: var(--surface-2);
+  border-radius: 10px;
+  padding: 9px 8px;
+  color: var(--text);
+  cursor: pointer;
+  font-size: 13px;
+}
+.side-add:hover { border-color: var(--brand-2); }
+
+.rail-icons {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.side.expanded .rail-icons { display: none; }
+
+.rail-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  aspect-ratio: 1;
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  color: var(--text);
+  cursor: pointer;
+  font-size: 16px;
+}
+.rail-icon:hover { border-color: var(--brand-2); }
+
+.side-list { display: flex; flex-direction: column; gap: 14px; }
+.group { margin-bottom: 0; }
+.group-name { font-size: 12px; color: var(--muted); margin-bottom: 6px; }
 .node-item {
   display: flex;
   align-items: center;
@@ -295,35 +409,62 @@ async function onRun() {
   width: 100%;
   padding: 8px 10px;
   margin-bottom: 6px;
-  background: #292524;
-  border: 1px solid #3f3a36;
+  background: var(--surface-2);
+  border: 1px solid var(--border);
   border-radius: 8px;
-  color: #e7e5e4;
+  color: var(--text);
   cursor: grab;
 }
-.node-item:hover { border-color: #38bdf8; }
+.node-item:hover { border-color: var(--brand-2); }
 .ni-icon { width: 20px; }
-.side-tip { margin-top: 16px; font-size: 12px; color: #78716c; line-height: 1.6; }
+.side-tip { margin-top: 4px; font-size: 12px; color: var(--muted); line-height: 1.6; }
 .canvas { flex: 1; position: relative; }
 .toolbar { display: flex; gap: 8px; }
+
+.canvas-empty {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+  z-index: 5;
+}
+.empty-card {
+  pointer-events: auto;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  max-width: 360px;
+  padding: 28px 24px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  text-align: center;
+}
+.empty-icon { font-size: 34px; }
+.empty-card h3 { margin: 0; font-size: 16px; color: var(--text); }
+.empty-card .muted { margin: 0; font-size: 13px; line-height: 1.6; }
+.empty-actions { display: flex; gap: 8px; flex-wrap: wrap; justify-content: center; margin-top: 6px; }
 .err-bar { position: absolute; left: 16px; bottom: 16px; width: 320px; }
 .params {
   width: 260px;
-  border-left: 1px solid #292524;
+  border-left: 1px solid var(--border);
   padding: 14px;
   overflow-y: auto;
-  color: #e7e5e4;
+  color: var(--text);
 }
 .params-title { font-weight: 700; }
-.params-sub { font-size: 12px; color: #a8a29e; margin: 4px 0 12px; }
+.params-sub { font-size: 12px; color: var(--muted); margin: 4px 0 12px; }
 .params-img { width: 100%; height: 140px; border-radius: 6px; }
 .params-video { width: 100%; max-height: 180px; border-radius: 6px; }
 .params-alert { margin-bottom: 12px; }
 .readonly {
   white-space: pre-wrap;
   font-size: 12px;
-  background: #1c1917;
-  border: 1px solid #3f3a36;
+  background: var(--bg-2);
+  border: 1px solid var(--border);
   border-radius: 6px;
   padding: 8px;
   max-height: 160px;

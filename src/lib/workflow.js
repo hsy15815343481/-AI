@@ -34,7 +34,7 @@ export const NODE_TYPES = {
     label: 'AI 绘画',
     icon: '🎨',
     category: 'AI 处理',
-    defaults: { title: 'AI 绘画', prompt: '', size: '1:1', count: 1, channel: '', model: '', resultUrl: '', status: 'idle' }
+    defaults: { title: 'AI 绘画', prompt: '', size: '1:1', count: 1, resolution: '2K', channel: '', model: '', resultUrl: '', status: 'idle' }
   },
   audio: {
     label: '音频节点',
@@ -201,6 +201,7 @@ async function runSingle(node, inputs) {
           prompt,
           size: pickEnum(d.size, IMAGE_SIZES, '1:1'),
           n: clampInt(d.count, 1, 4, 1),
+          resolution: d.resolution || '2K',
           refs: cleanRefs(inputs.images)
         },
         channel: d.channel || '',

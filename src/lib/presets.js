@@ -5,7 +5,13 @@
  *
  * badge 为「待接入」的模板属于图片编辑/图生图类能力，当前后端渠道尚未支持，
  * 仅预置提示词与表单，不承诺真实出图效果。
+ *
+ * 公开字段预留（第一版默认私有自用，后续开放给其他用户复用时只改值/后台配置）：
+ * - author: 作者标识（当前为系统预置，后续替换为用户昵称）
+ * - visibility: 可见范围，'private' 仅自己 / 'public' 公开复用
+ * 未在条目内显式声明时，由后端 /templates 出口兜底补默认值。
  */
+import { REALISM_SUFFIX } from './realism.js'
 
 export const PRESET_GROUPS = [
   { key: 'image', label: '电商出图' },
@@ -287,6 +293,13 @@ export const PRESETS = [
     prompt: '【GIF 动图】主体：____；动作：轻微循环摆动/转场；画面简洁，循环自然，短时长。'
   }
 ]
+
+// 图片类模板统一补真实感锚点与反向约束（已含尾句的不重复追加）
+for (const p of PRESETS) {
+  if (p.group === 'image' && p.prompt && !p.prompt.includes('真实实拍质感')) {
+    p.prompt = `${p.prompt}；${REALISM_SUFFIX}`
+  }
+}
 
 export function getPreset(slug) {
   return PRESETS.find((p) => p.slug === slug) || null

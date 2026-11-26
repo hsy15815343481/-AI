@@ -96,6 +96,29 @@ export const useWorkflowStore = defineStore('workflow', () => {
     selectedId.value = null
   }
 
+  // 加载一套预置工作流模板：清空画布后按模板节点/连线重建
+  function loadTemplate(tpl) {
+    if (!tpl) return
+    // 原地清空，保持数组引用，避免画布 v-model 引用不同步
+    nodes.value.splice(0, nodes.value.length)
+    edges.value.splice(0, edges.value.length)
+    selectedId.value = null
+    const keyToId = {}
+    for (const n of tpl.nodes) {
+      const node = createNode(n.type, n.position)
+      Object.assign(node.data, n.data || {})
+      keyToId[n.key] = node.id
+      nodes.value.push(node)
+    }
+    for (const e of tpl.edges) {
+      const source = keyToId[e.source]
+      const target = keyToId[e.target]
+      if (!source || !target) continue
+      edges.value.push({ id: `e_${source}_${target}`, source, target })
+    }
+    persist()
+  }
+
   // 预置「人物自拍 + 单品图 → 穿搭成品」模板
   function addOutfitTemplate() {
     const nText = addNode('text', { x: 80, y: 80 })
@@ -136,6 +159,7 @@ export const useWorkflowStore = defineStore('workflow', () => {
     run,
     clearCanvas,
     addOutfitTemplate,
+    loadTemplate,
     nodeLabel
   }
 })

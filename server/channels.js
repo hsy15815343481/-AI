@@ -125,24 +125,44 @@ export async function generateImage(prompt, opts = {}) {
   if (!channel || !channel.apiKey) return mockImage(prompt)
 
   const model = opts.model || defaultModel(channel)
-  const body = {
-    model,
-    prompt,
-    size: pxForResolution(sizeToPx(opts.size), opts.resolution)
-  }
-  if (opts.n) body.n = opts.n
-  // 参考图预留：当前已接通渠道（智谱 CogView / GLM-Image）为纯文生图，不接受参考图字段。
-  // 待接入支持图生图 / 多图参考的渠道后，再在此按渠道协议附加 refs。
-  if (Array.isArray(opts.refs) && opts.refs.length) {
-    // 参考图：仅 Seedream 支持图生图/参考图编辑，按其 OpenAI 兼容协议附加 image 字段；
-    // 智谱等纯文生图渠道不接受该字段，安全忽略。
-    if (channel.id === 'volc-seedream') {
+  let body
+
+  if (channel.id === 'volc-seedream') {
+    // 火山 Seedream：尺寸用分辨率档位（2K/4K），宽高比在提示词里描述；
+    // 不识别 OpenAI 的 n 字段，组图走 sequential_image_generation，这里固定单图。
+    body = {
+      model,
+      prompt,
+      size: opts.resolution === '4K' ? '4K' : '2K',
+      response_format: 'url'
+    }
+    // 参考图：Seedream 支持图生图/参考图编辑，image 字段接受 URL 或 Base64（单张字符串 / 多张数组）
+    if (Array.isArray(opts.refs) && opts.refs.length) {
       body.image = opts.refs.length === 1 ? opts.refs[0] : opts.refs
     }
+  } else if (channel.id === 'siliconflow-image') {
+    // 硅基流动：尺寸字段为 image_size（widthxheight）；响应取 images[0].url，非 OpenAI data[0]。
+    body = {
+      model,
+      prompt,
+      image_size: pxForResolution(sizeToPx(opts.size), opts.resolution)
+    }
+  } else {
+    // 其他文生图渠道（智谱 CogView / GLM-Image 等）：用像素尺寸表；纯文生图不附加参考图字段
+    body = {
+      model,
+      prompt,
+      size: pxForResolution(sizeToPx(opts.size), opts.resolution)
+    }
+    if (opts.n) body.n = opts.n
   }
+
   const data = await postJson(channel, '/images/generations', body)
-  const url = data?.data?.[0]?.url
-  const b64 = data?.data?.[0]?.b64_json
+  // 兼容两种响应结构：OpenAI/智谱 data[0]，硅基 images[0]
+  const firstOpenAi = data?.data?.[0]
+  const firstSilicon = data?.images?.[0]
+  const url = firstOpenAi?.url || firstSilicon?.url
+  const b64 = firstOpenAi?.b64_json
   if (url) return url
   if (b64) return `data:image/png;base64,${b64}`
   throw new Error('渠道未返回图片')
@@ -169,6 +189,9 @@ export async function generateVideo(prompt, opts = {}) {
   if (channel.id === 'bailian-wanxiang') {
     return generateVideoBailian(channel, model, prompt, refs, opts)
   }
+  if (channel.id === 'zhipu-video') {
+    return generateVideoZhipu(channel, model, prompt, refs, opts)
+  }
   return generateVideoVolc(channel, model, prompt, refs, opts)
 }
 
@@ -183,7 +206,8 @@ async function generateVideoVolc(channel, model, prompt, refs, opts) {
     generate_audio: true,
     ratio: opts.ratio || '16:9',
     duration: opts.duration || 5,
-    resolution: opts.resolution || '720P',
+    // 方舟分辨率档位为小写：480p / 720p / 1080p / 4k
+    resolution: (opts.resolution || '720P').toLowerCase(),
     watermark: true
   })
   const taskId = create.id
@@ -217,9 +241,53 @@ async function generateVideoBailian(channel, model, prompt, refs, opts) {
   if (!taskId) throw new Error('视频任务创建失败：未返回 task_id')
   for (let i = 0; i < 30; i++) {
     const task = await getJson(channel, `/tasks/${taskId}`)
-    const status = task.output?.status
+    // 百炼任务状态字段为 output.task_status（SUCCEEDED / FAILED），兼容旧版 output.status
+    const status = task.output?.task_status || task.output?.status
     if (status === 'SUCCEEDED') return task.output?.video_url || ''
     if (status === 'FAILED') throw new Error(task.output?.message || '视频生成失败')
+    await sleep(3000)
+  }
+  throw new Error('视频生成超时')
+}
+
+// 智谱视频：比例 + 分辨率 → 官方支持的像素档位。
+// 实测 cogvideox-flash 仅支持 1280x720 与 1024x1024，不支持竖屏 720x1280 / 1080x1920，
+// 竖屏与 1080P 档位就近回退到 flash 支持的尺寸。
+const ZHIPU_VIDEO_SIZE = {
+  '16:9': { '480P': '1280x720', '720P': '1280x720', '1080P': '1280x720' },
+  '9:16': { '480P': '1024x1024', '720P': '1024x1024', '1080P': '1024x1024' },
+  '1:1': { '480P': '1024x1024', '720P': '1024x1024', '1080P': '1024x1024' }
+}
+function zhipuVideoSize(ratio, resolution) {
+  const row = ZHIPU_VIDEO_SIZE[ratio] || ZHIPU_VIDEO_SIZE['16:9']
+  return row[resolution] || row['720P'] || '1280x720'
+}
+
+/** 智谱 CogVideoX：创建异步任务后轮询 video_result[0].url */
+async function generateVideoZhipu(channel, model, prompt, refs, opts) {
+  // 官方时长仅支持 5 / 10 秒；前端传入 2–30 秒，就近归一
+  const duration = opts.duration && opts.duration > 5 ? 10 : 5
+  const body = {
+    model,
+    prompt,
+    quality: 'speed',
+    with_audio: false,
+    size: zhipuVideoSize(opts.ratio, opts.resolution),
+    fps: 30,
+    duration
+  }
+  // 参考图：智谱 image_url 支持单张字符串或多张数组
+  if (refs.length) body.image_url = refs.length === 1 ? refs[0] : refs
+
+  const create = await postJson(channel, '/videos/generations', body)
+  const taskId = create.id
+  if (!taskId) throw new Error('视频任务创建失败：未返回任务 ID')
+
+  for (let i = 0; i < 40; i++) {
+    const task = await getJson(channel, `/async-result/${taskId}`)
+    const status = task.task_status
+    if (status === 'SUCCESS') return task.video_result?.[0]?.url || ''
+    if (status === 'FAIL') throw new Error(task.error?.message || '视频生成失败')
     await sleep(3000)
   }
   throw new Error('视频生成超时')

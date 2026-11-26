@@ -12,6 +12,8 @@ import './env.js'
 import { generateCopywriting, generateImage, generateVideo, channelStatus } from './channels.js'
 import { listChannels } from './channel-registry.js'
 import { repo } from './repository.js'
+import { PRESETS } from '../src/lib/presets.js'
+import { WORKFLOW_TEMPLATES } from '../src/lib/workflowTemplates.js'
 
 const PORT = Number(process.env.PORT || 8787)
 const INITIAL_CREDITS = Number(process.env.INITIAL_CREDITS || 10)
@@ -181,6 +183,23 @@ const server = http.createServer(async (req, res) => {
   // 可选渠道与模型列表（不含密钥，供前端下拉选择）
   if (p === '/api/v1/channels' && req.method === 'GET') {
     return send(res, 200, listChannels())
+  }
+
+  // 模板市场（公开）：指令模板 / 工作流模板；前端拉取失败时回落本地静态模板。
+  // 后续迁移 Supabase 时把这里替换为 repo.listTemplates()，字段结构保持不变。
+  if (p === '/api/v1/templates' && req.method === 'GET') {
+    const type = url.searchParams.get('type')
+    // 公开字段兜底：条目未显式声明 author/visibility 时补默认值（私有自用）
+    const normalizeTemplate = (t) => ({
+      author: '系统预置',
+      visibility: 'private',
+      ...t
+    })
+    const prompt = PRESETS.map(normalizeTemplate)
+    const workflow = WORKFLOW_TEMPLATES.map(normalizeTemplate)
+    if (type === 'workflow') return send(res, 200, workflow)
+    if (type === 'prompt') return send(res, 200, prompt)
+    return send(res, 200, { prompt, workflow })
   }
 
   // 以下接口需要登录

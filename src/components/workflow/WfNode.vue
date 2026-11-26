@@ -67,6 +67,11 @@ function onDelete() {
   store.removeNode(props.id)
 }
 
+// 排除自连；重复边由 store.onConnect 去重
+function isValidConnection(conn) {
+  return Boolean(conn) && conn.source !== conn.target
+}
+
 function onDownload() {
   if (previewImage.value) downloadDataUrl(previewImage.value, `${props.data.title}.png`)
   else if (hasText.value) downloadText(props.data.resultText, `${props.data.title}.txt`)
@@ -101,7 +106,15 @@ function onPaste(e) {
     :style="type === 'note' ? { '--note-bg': data.color } : {}"
     @paste="onPaste"
   >
-    <Handle v-if="!isPlaceholder" type="target" position="left" />
+    <Handle
+      v-if="!isPlaceholder"
+      type="target"
+      position="left"
+      class="wf-handle"
+      :is-valid-connection="isValidConnection"
+    >
+      <el-icon class="handle-plus"><Plus /></el-icon>
+    </Handle>
 
     <div class="head">
       <span class="icon">{{ def.icon }}</span>
@@ -174,6 +187,10 @@ function onPaste(e) {
             <el-option v-for="n in [1, 2, 3, 4]" :key="n" :label="`${n} 张`" :value="n" />
           </el-select>
         </div>
+        <el-select v-model="data.resolution" size="small" class="mt">
+          <el-option label="高清 2K" value="2K" />
+          <el-option label="超清 4K" value="4K" />
+        </el-select>
       </template>
 
       <template v-else-if="type === 'audio'">
@@ -234,7 +251,13 @@ function onPaste(e) {
       </el-tooltip>
     </div>
 
-    <Handle v-if="!isPlaceholder" type="source" position="right" />
+    <Handle
+      v-if="!isPlaceholder"
+      type="source"
+      position="right"
+      class="wf-handle"
+      :is-valid-connection="isValidConnection"
+    />
 
     <el-dialog v-model="previewVisible" title="结果预览" width="480px">
       <el-image v-if="previewImage" :src="previewImage" fit="contain" class="preview-img" />
@@ -247,11 +270,11 @@ function onPaste(e) {
 .wf-node {
   position: relative;
   width: 220px;
-  background: #26221f;
-  border: 1px solid #3f3a36;
+  background: var(--surface);
+  border: 1px solid var(--border);
   border-radius: 10px;
   padding: 10px;
-  color: #e7e5e4;
+  color: var(--text);
   font-size: 13px;
 }
 .wf-node.is-note {
@@ -279,8 +302,8 @@ function onPaste(e) {
   display: flex;
   align-items: center;
   justify-content: center;
-  color: #78716c;
-  border: 1px dashed #57534e;
+  color: var(--muted);
+  border: 1px dashed var(--border);
   border-radius: 6px;
 }
 .note .placeholder { color: #78716c; }
@@ -291,7 +314,7 @@ function onPaste(e) {
   max-height: 96px;
   overflow: auto;
 }
-.err { color: #f87171; font-size: 12px; }
+.err { color: #dc2626; font-size: 12px; }
 .mt { margin-top: 6px; }
 .node-model-row { margin-top: 2px; }
 .node-params-row { display: flex; gap: 6px; }
@@ -312,8 +335,8 @@ function onPaste(e) {
   right: 8px;
   display: flex;
   gap: 4px;
-  background: #1c1917;
-  border: 1px solid #3f3a36;
+  background: var(--bg-2);
+  border: 1px solid var(--border);
   border-radius: 8px;
   padding: 3px;
 }
@@ -323,15 +346,42 @@ function onPaste(e) {
   justify-content: center;
   width: 26px;
   height: 26px;
-  background: #292524;
+  background: var(--surface-2);
   border: none;
   border-radius: 6px;
-  color: #e7e5e4;
+  color: var(--text);
   cursor: pointer;
 }
 .act:hover { border-color: #38bdf8; }
-.act.danger { color: #f87171; }
+.act.danger { color: #dc2626; }
 .act:disabled { opacity: 0.35; cursor: not-allowed; }
 .preview-img { width: 100%; max-height: 360px; }
 .preview-text { white-space: pre-wrap; margin: 0; }
+
+/* 连线端口：默认小圆点，拖拽悬停到有效目标时放大并显示加号 */
+.wf-handle {
+  width: 13px;
+  height: 13px;
+  background: var(--surface-3);
+  border: 1px solid var(--border);
+}
+.handle-plus {
+  width: 10px;
+  height: 10px;
+  opacity: 0;
+  color: #fff;
+  font-size: 10px;
+}
+.wf-handle.vue-flow__handle-connecting {
+  background: var(--brand-2);
+}
+.wf-handle.vue-flow__handle-valid {
+  width: 18px;
+  height: 18px;
+  background: var(--brand);
+  border-color: var(--brand);
+}
+.wf-handle.vue-flow__handle-valid .handle-plus {
+  opacity: 1;
+}
 </style>

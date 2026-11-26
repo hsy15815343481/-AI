@@ -27,6 +27,19 @@ const CHANNEL_DEFS = [
     ],
     keyEnv: 'DEEPSEEK_API_KEY'
   },
+  // 硅基流动 SiliconFlow：OpenAI 兼容聊天渠道（文案）。无 SILICONFLOW_API_KEY 时回退 mock。
+  // 复用图片渠道的同一个 Key；聊天接口走 /chat/completions，模型名以硅基模型广场为准。
+  {
+    id: 'siliconflow-chat',
+    name: '硅基流动文案',
+    kind: 'chat',
+    baseUrl: 'https://api.siliconflow.cn/v1',
+    models: [
+      { model: 'Qwen/Qwen3-8B', label: '秋挽·文案轻量版', desc: '免费轻量文案模型，适合跑量种草/营销短文案', fit: '跑量文案' },
+      { model: 'Qwen/Qwen2.5-7B-Instruct', label: 'Qwen2.5 7B', desc: '通用指令对话模型，文案表达较稳', fit: '通用文案' }
+    ],
+    keyEnv: 'SILICONFLOW_API_KEY'
+  },
   // 预留位：OpenAI（OpenAI 兼容协议）。需可访问海外网络 + 海外支付；无 OPENAI_API_KEY 时不启用，回退 mock。
   {
     id: 'openai',
@@ -52,7 +65,22 @@ const CHANNEL_DEFS = [
     ],
     keyEnv: 'ZHIPU_API_KEY'
   },
+  // 硅基流动 SiliconFlow：OpenAI 兼容聚合渠道（图片）。无 SILICONFLOW_API_KEY 时回退 mock。
+  // 模型名以硅基模型广场为准；生图接口返回 images[0].url（非 OpenAI data[0]），字段用 image_size。
+  {
+    id: 'siliconflow-image',
+    name: '硅基流动',
+    kind: 'image',
+    baseUrl: 'https://api.siliconflow.cn/v1',
+    models: [
+      { model: 'Kwai-Kolors/Kolors', label: '秋挽·跑量图', desc: '轻量快速出图，适合批量主图', fit: '主图 · 跑量' },
+      { model: 'black-forest-labs/FLUX.1-schnell', label: 'FLUX 快速版', desc: '通用高质出图，细节较稳', fit: '通用出图' }
+    ],
+    keyEnv: 'SILICONFLOW_API_KEY'
+  },
   // 字节火山方舟：Seedream 图像生成（OpenAI 兼容图片协议，支持参考图编辑）。无 ARK_API_KEY 时回退 mock。
+  // 注意：下方 model 为占位名，开通后需替换为控制台「模型列表」里的完整 Model ID（带日期后缀，如 doubao-seedream-5-0-flash-260915），
+  // 或创建在线推理接入点后填 Endpoint ID（ep-xxxxxxxx）。
   {
     id: 'volc-seedream',
     name: '火山 Seedream',
@@ -66,6 +94,7 @@ const CHANNEL_DEFS = [
     keyEnv: 'ARK_API_KEY'
   },
   // 字节火山方舟：Seedance 视频生成（异步任务：创建后轮询 video_url）。无 ARK_API_KEY 时回退 mock。
+  // 注意：model 为占位名，开通后替换为完整 Model ID（如 doubao-seedance-2-5-flash-261115）或 Endpoint ID。
   {
     id: 'volc-seedance',
     name: '火山 Seedance 视频',
@@ -78,6 +107,18 @@ const CHANNEL_DEFS = [
       { model: 'doubao-seedance-2-0-mini', label: 'Seedance Mini', desc: '轻量视频模型', fit: '备用视频' }
     ],
     keyEnv: 'ARK_API_KEY'
+  },
+  // 智谱 CogVideoX 视频生成（异步任务：创建后轮询 video_result[0].url）。复用 ZHIPU_API_KEY，无 Key 时回退 mock。
+  // 注意：cogvideox-flash 为免费款；若控制台未上架该模型，可替换为付费款 cogvideox-3。
+  {
+    id: 'zhipu-video',
+    name: '智谱 CogVideoX',
+    kind: 'video',
+    baseUrl: 'https://open.bigmodel.cn/api/paas/v4',
+    models: [
+      { model: 'cogvideox-flash', label: '秋挽·免费短片', desc: '免费 5 秒短片，适合跑量预览与 B-roll', fit: '跑量预览' }
+    ],
+    keyEnv: 'ZHIPU_API_KEY'
   },
   // 阿里云百炼：万相 Wan3.0 视频生成（异步任务：创建后轮询 video_url）。无 DASHSCOPE_API_KEY 时回退 mock。
   {
